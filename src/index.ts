@@ -118,10 +118,8 @@ class EventLoop {
   }
 
   get hasTasks(): boolean {
-    return (
-      this.macroTaskQueue.hasItems ||
-      this.microTaskQueue.hasItems ||
-      this.animationQueue.hasItems
+    return [this.macroTaskQueue, this.microTaskQueue, this.animationQueue].some(
+      (queue) => queue.hasItems,
     )
   }
 
@@ -137,9 +135,9 @@ class EventLoop {
     return this.animationQueue.hasItems
   }
 
-  public async queueMacroTask(callback: Callback, ms: number): Promise<void> {
+  public async queueMacroTask(callback: Callback, ms: number) {
     const task = new Task(callback, ms)
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       setTimeout(() => {
         this.macroTaskQueue.push(task)
         resolve()
@@ -147,11 +145,11 @@ class EventLoop {
     })
   }
 
-  public async queueMicroTask(callback: Callback, ms: number): Promise<void> {
+  public async queueMicroTask(callback: Callback, ms: number) {
     const task = new Task(callback, ms)
     return Promise.resolve().then(
       () =>
-        new Promise((resolve) => {
+        new Promise<void>((resolve) => {
           setTimeout(() => {
             this.microTaskQueue.push(task)
             resolve()
@@ -160,12 +158,9 @@ class EventLoop {
     )
   }
 
-  public async queueAnimationTask(
-    callback: Callback,
-    ms: number,
-  ): Promise<void> {
+  public async queueAnimationTask(callback: Callback, ms: number) {
     const task = new Task(callback, ms)
-    return new Promise((resolve) => {
+    return new Promise<void>((resolve) => {
       setTimeout(() => {
         this.animationQueue.push(task)
         resolve()
@@ -193,7 +188,7 @@ class EventLoop {
   }
 }
 
-enum TaskType {
+enum Tasks {
   MacroTask = "mockMacroTask",
   MicroTask = "mockMicroTask",
   AnimationTask = "mockAnimationTask",
@@ -202,7 +197,7 @@ enum TaskType {
 function withLogging<Args extends unknown[], Return>(
   target: (...args: Args) => Promise<Return>,
 ) {
-  return async (...args: Args): Promise<Return> => {
+  return async function (...args: Args): Promise<Return> {
     console.log(`[Event loop] -> Task started...`)
     const result = await target(...args)
     console.log(`[Event loop] -> Task completed.`)
@@ -213,7 +208,7 @@ function withLogging<Args extends unknown[], Return>(
 class TaskMocker {
   constructor(private loop: EventLoop) {}
 
-  async [TaskType.MacroTask](ms: number) {
+  public async [Tasks.MacroTask](ms: number) {
     await this.loop.queueMacroTask(
       withLogging(async () => {
         await new Promise((resolve) => setTimeout(resolve, ms))
@@ -222,7 +217,7 @@ class TaskMocker {
     )
   }
 
-  async [TaskType.MicroTask](ms: number) {
+  public async [Tasks.MicroTask](ms: number) {
     await this.loop.queueMicroTask(
       withLogging(async () => {
         let result = 0
@@ -233,7 +228,7 @@ class TaskMocker {
     )
   }
 
-  async [TaskType.AnimationTask](ms: number) {
+  public async [Tasks.AnimationTask](ms: number) {
     await this.loop.queueAnimationTask(
       withLogging(async () => {
         await new Promise((resolve) => setTimeout(resolve, ms))
@@ -257,7 +252,7 @@ async function mockTasks(
 
   for (let i = 1; i <= quantity; i++) {
     const ms = Math.floor(Math.random() * (maxDelay - minDelay) + minDelay)
-    const taskTypes = Object.values(TaskType)
+    const taskTypes = Object.values(Tasks)
     const randomI = Math.floor(Math.random() * taskTypes.length)
     const taskType = taskTypes[randomI]
 

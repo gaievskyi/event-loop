@@ -4,9 +4,7 @@ const config = {
   ignorePatterns: ["*.d.ts"],
   overrides: [
     {
-      extends: [
-        "plugin:@typescript-eslint/recommended-requiring-type-checking",
-      ],
+      extends: ["plugin:@typescript-eslint/recommended-requiring-type-checking"],
       files: ["*.ts", "*.tsx"],
       parserOptions: {
         project: "./tsconfig.json",
