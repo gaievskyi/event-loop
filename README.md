@@ -1,10 +1,10 @@
 # Event Loop Simulator
 
-This project provides a simple simulation of the JavaScript event loop. It includes the handling of macro tasks, micro tasks, and animation frame tasks. The event loop gives priority to different types of tasks and handles them accordingly.
+This project provides a simple simulation of the JavaScript event loop. It includes handling macro tasks, micro-tasks, and animation frame tasks. The event loop prioritizes different types of tasks and handles them accordingly.
 
 ## Installation
 
-This project is written in TypeScript. We force using pnpm package manager for the best DX. Using **npm**, you can install it globally.
+This project is written in TypeScript. We force using **pnpm** package manager for the best DX. Using **npm**, you can install it globally.
 
 ```bash
 npm install -g pnpm
@@ -30,7 +30,7 @@ pnpm start
 
 ### BinaryHeap
 
-A binary heap data structure used for managing tasks in the event loop.
+A binary heap data structure is used for managing tasks in the event loop.
 
 #### Methods
 
@@ -67,14 +67,14 @@ A class representing the JavaScript event loop.
 
 - `isPainting`: A boolean indicating whether it's time to repaint the page.
 - `hasTasks`: A boolean indicating whether there are any tasks in the queues.
-- `hasMacroTask`: A boolean indicating whether there are any macro tasks in the queue.
-- `hasMicroTask`: A boolean indicating whether there are any micro tasks in the queue.
+- `hasMacroTask`: A boolean indicating whether there are any macro-tasks in the queue.
+- `hasMicroTask`: A boolean indicating whether there are any micro-tasks in the queue.
 - `hasAnimationTask`: A boolean indicating whether there are any animation tasks in the queue.
 
 ## Example
 
-The `runOnce` function in the code provides an example of how to use the `EventLoop` class. It creates an instance of `EventLoop`, adds some tasks to the queues, and then starts the event loop. The tasks simulate network requests (macro tasks), computations (micro tasks), and DOM manipulations (animation tasks).
+The `run` function in the code provides an example of using the `EventLoop` class. It creates an instance of `EventLoop`, adds some tasks to the queues, and then starts the event loop. The tasks simulate network requests (macro-tasks), computations (micro-tasks), and DOM manipulations (animation tasks).
 
 ## License
 
-This project is licensed under the MIT License.
+_This project is licensed under the MIT License._
