@@ -1,6 +1,7 @@
 {
     "include": [
         ".prettierrc.cjs",
+        ".eslintrc.cjs",
         "src/**/*.ts",
         "reset.d.ts",
     ],

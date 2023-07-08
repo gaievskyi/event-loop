@@ -50,7 +50,7 @@ export class BinaryHeap<T extends Task> implements Heap<T> {
   }
 
   private swap(i: number, j: number) {
-    let temp = this.items[i]
+    const temp = this.items[i]
     this.items[i] = this.items[j]
     this.items[j] = temp
   }
@@ -195,30 +195,38 @@ async function getTasks(
       case "macro":
         // Simulate a network request
         await loop.queueMacroTask(async () => {
-          console.log(`Macro task started: making network request...`)
+          console.log(
+            `[Event loop] -> Macro task started: making network request...`,
+          )
           await new Promise((resolve) => setTimeout(resolve, ms))
-          console.log(`Macro task completed after ${ms} ms.`)
+          console.log(`[Event loop] -> Macro task completed after ${ms} ms.`)
         }, ms)
         break
 
       case "micro":
         // Simulate a computation
-        await loop.queueMicroTask(async () => {
-          console.log(`Micro task started: performing computation...`)
+        await loop.queueMicroTask(() => {
+          console.log(
+            `[Event loop] -> Micro task started: performing computation...`,
+          )
           let result = 0
-          for (let j = 0; j < 1e6; j++) {
-            result += j
-          }
-          console.log(`Micro task completed: result is ${result}.`)
+          for (let j = 0; j < 1e3; j++) result += j
+          console.log(
+            `[Event loop] -> Micro task completed: result is ${result}.`,
+          )
         }, ms)
         break
 
       case "animation":
         // Simulate a DOM manipulation
         await loop.queueAnimationTask(async () => {
-          console.log(`Animation task started: manipulating DOM...`)
+          console.log(
+            `[Event loop] -> Animation task started: manipulating DOM...`,
+          )
           await new Promise((resolve) => setTimeout(resolve, ms))
-          console.log(`Animation task completed after ${ms} ms.`)
+          console.log(
+            `[Event loop] -> Animation task completed after ${ms} ms.`,
+          )
         }, ms)
         break
     }
