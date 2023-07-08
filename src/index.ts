@@ -101,6 +101,11 @@ class Task {
   ) {}
 }
 
+async function execute(queue: BinaryHeap<Task>) {
+  const { callback } = queue.shift()
+  return await callback()
+}
+
 export class EventLoop {
   private readonly macroTaskQueue = new BinaryHeap<Task>(16)
   private readonly microTaskQueue = new BinaryHeap<Task>(16)
@@ -168,23 +173,18 @@ export class EventLoop {
     })
   }
 
-  private async handle(queue: BinaryHeap<Task>) {
-    const { callback } = queue.shift()
-    return await callback()
-  }
-
   public async run() {
     console.log("[Event loop]: Started.")
     while (this.hasTasks) {
       if (this.hasMacroTask) {
-        await this.handle(this.macroTaskQueue)
+        await execute(this.macroTaskQueue)
       }
       while (this.hasMicroTask) {
-        await this.handle(this.microTaskQueue)
+        await execute(this.microTaskQueue)
       }
       if (this.isPainting) {
         while (this.hasAnimationTask) {
-          await this.handle(this.animationQueue)
+          await execute(this.animationQueue)
         }
         this.lastPaintTime = Date.now()
         repaint()
