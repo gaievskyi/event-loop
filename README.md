@@ -1,4 +1,4 @@
-# Event Loop Simulator
+# Event Loop
 
 This project provides a simple simulation of the JavaScript event loop. It includes handling macro tasks, micro-tasks, and animation frame tasks. The event loop prioritizes different types of tasks and handles them accordingly.
 
@@ -6,24 +6,24 @@ This project provides a simple simulation of the JavaScript event loop. It inclu
 
 This project is written in TypeScript. We force using **pnpm** package manager for the best DX. Using **npm**, you can install it globally.
 
-```bash
-npm install -g pnpm
+```console
+foo@bar:~$ npm install -g pnpm
 ```
 
 Then, clone the repository and install the dependencies:
 
-```bash
-git clone https://github.com/gaievskyi/event-loop.git
-cd event-loop
-pnpm install
+```console
+foo@bar:~$ git clone https://github.com/gaievskyi/event-loop.git
+foo@bar:~$ cd event-loop
+foo@bar:event-loop$ pnpm install
 ```
 
 ## Usage
 
 You can run the simulation by executing the npm script:
 
-```bash
-pnpm start
+```console
+foo@bar:event-loop$ pnpm start
 ```
 
 ## API
