@@ -101,7 +101,7 @@ class Task {
   ) {}
 }
 
-async function execute(queue: BinaryHeap<Task>) {
+async function execute(queue: BinaryHeap<Task>): ReturnType<AsyncCallback> {
   const { callback } = queue.shift()
   return await callback()
 }
