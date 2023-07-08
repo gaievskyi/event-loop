@@ -1,7 +1,7 @@
 /** @type {import("eslint").Linter.Config} */
 const config = {
   root: true,
-  ignorePatterns: ["reset.d.ts"],
+  ignorePatterns: ["*.d.ts"],
   overrides: [
     {
       extends: [

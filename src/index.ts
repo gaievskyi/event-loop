@@ -1,3 +1,7 @@
+type AsyncCallback = () => Promise<void>
+type SyncCallback = () => void
+type Callback = SyncCallback | AsyncCallback
+
 interface Heap<T> {
   get size(): number
   get hasItems(): boolean
@@ -6,7 +10,7 @@ interface Heap<T> {
   peek(): T
 }
 
-export class BinaryHeap<T extends Task> implements Heap<T> {
+class BinaryHeap<T extends Task> implements Heap<T> {
   private readonly items: T[] = []
 
   constructor(private readonly capacity: number = Infinity) {}
@@ -86,14 +90,6 @@ export class BinaryHeap<T extends Task> implements Heap<T> {
   }
 }
 
-type AsyncCallback = () => Promise<void>
-type SyncCallback = () => void
-type Callback = SyncCallback | AsyncCallback
-
-function repaint(): void {
-  console.log("[Render engine]: Rendering page changes...")
-}
-
 class Task {
   constructor(
     public readonly callback: Callback,
@@ -101,12 +97,16 @@ class Task {
   ) {}
 }
 
+function repaint(): void {
+  console.log("[Render engine]: Rendering page changes...")
+}
+
 async function execute(queue: BinaryHeap<Task>): ReturnType<AsyncCallback> {
   const { callback } = queue.shift()
   return await callback()
 }
 
-export class EventLoop {
+class EventLoop {
   private readonly macroTaskQueue = new BinaryHeap<Task>(16)
   private readonly microTaskQueue = new BinaryHeap<Task>(16)
   private readonly animationQueue = new BinaryHeap<Task>(16)
@@ -193,7 +193,57 @@ export class EventLoop {
   }
 }
 
-async function getTasks(
+enum TaskType {
+  MacroTask = "mockMacroTask",
+  MicroTask = "mockMicroTask",
+  AnimationTask = "mockAnimationTask",
+}
+
+function withLogging<Args extends unknown[], Return>(
+  target: (...args: Args) => Promise<Return>,
+) {
+  return async (...args: Args): Promise<Return> => {
+    console.log(`[Event loop] -> Task started...`)
+    const result = await target(...args)
+    console.log(`[Event loop] -> Task completed.`)
+    return result
+  }
+}
+
+class TaskMocker {
+  constructor(private loop: EventLoop) {}
+
+  async [TaskType.MacroTask](ms: number) {
+    await this.loop.queueMacroTask(
+      withLogging(async () => {
+        await new Promise((resolve) => setTimeout(resolve, ms))
+      }),
+      ms,
+    )
+  }
+
+  async [TaskType.MicroTask](ms: number) {
+    await this.loop.queueMicroTask(
+      withLogging(async () => {
+        let result = 0
+        for (let j = 0; j < 1e3; j++) result += j
+        await Promise.resolve()
+      }),
+      ms,
+    )
+  }
+
+  async [TaskType.AnimationTask](ms: number) {
+    await this.loop.queueAnimationTask(
+      withLogging(async () => {
+        await new Promise((resolve) => setTimeout(resolve, ms))
+      }),
+      ms,
+    )
+  }
+}
+
+async function mockTasks(
   loop: EventLoop,
   options: { minDelay: number; maxDelay: number; quantity: number },
 ) {
@@ -203,51 +253,15 @@ async function getTasks(
     throw new Error("Invalid options: minDelay, maxDelay")
   }
 
-  const taskTypes = ["macro", "micro", "animation"] as const
+  const taskMocker = new TaskMocker(loop)
 
   for (let i = 1; i <= quantity; i++) {
     const ms = Math.floor(Math.random() * (maxDelay - minDelay) + minDelay)
-    const taskType = taskTypes[Math.floor(Math.random() * taskTypes.length)]
+    const taskTypes = Object.values(TaskType)
+    const randomI = Math.floor(Math.random() * taskTypes.length)
+    const taskType = taskTypes[randomI]
 
-    switch (taskType) {
-      case "macro":
-        // Simulate a network request
-        await loop.queueMacroTask(async () => {
-          console.log(
-            `[Event loop] -> Macro task started: making network request...`,
-          )
-          await new Promise((resolve) => setTimeout(resolve, ms))
-          console.log(`[Event loop] -> Macro task completed after ${ms} ms.`)
-        }, ms)
-        break
-
-      case "micro":
-        // Simulate a computation
-        await loop.queueMicroTask(() => {
-          console.log(
-            `[Event loop] -> Micro task started: performing computation...`,
-          )
-          let result = 0
-          for (let j = 0; j < 1e3; j++) result += j
-          console.log(
-            `[Event loop] -> Micro task completed: result is ${result}.`,
-          )
-        }, ms)
-        break
-
-      case "animation":
-        // Simulate a DOM manipulation
-        await loop.queueAnimationTask(async () => {
-          console.log(
-            `[Event loop] -> Animation task started: manipulating DOM...`,
-          )
-          await new Promise((resolve) => setTimeout(resolve, ms))
-          console.log(
-            `[Event loop] -> Animation task completed after ${ms} ms.`,
-          )
-        }, ms)
-        break
-    }
+    await taskMocker[taskType](ms)
   }
 }
 
@@ -261,10 +275,16 @@ function onError(error: unknown) {
   }
 }
 
-async function runOnce() {
-  const loop = new EventLoop()
-  await getTasks(loop, { minDelay: 100, maxDelay: 800, quantity: 6 })
-  await loop.run().then(onComplete).catch(onError)
+async function run() {
+  try {
+    const loop = new EventLoop()
+    await mockTasks(loop, { minDelay: 100, maxDelay: 800, quantity: 6 })
+    await loop.run()
+  } catch (error) {
+    onError(error)
+  } finally {
+    onComplete()
+  }
 }
 
-await runOnce()
+await run()
