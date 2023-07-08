@@ -1,4 +1,4 @@
-## Contributions
+# Contributions
 
 Contributions to this project are welcome! Here's how you can contribute:
 
