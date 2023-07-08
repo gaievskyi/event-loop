@@ -7,9 +7,9 @@ interface Heap<T> {
 }
 
 export class BinaryHeap<T extends Task> implements Heap<T> {
-  private items: T[] = []
+  private readonly items: T[] = []
 
-  constructor(private capacity: number = Infinity) {}
+  constructor(private readonly capacity: number = Infinity) {}
 
   get size(): number {
     return this.items.length
@@ -86,7 +86,9 @@ export class BinaryHeap<T extends Task> implements Heap<T> {
   }
 }
 
-type Callback = () => void | Promise<void>
+type AsyncCallback = () => Promise<void>
+type SyncCallback = () => void
+type Callback = SyncCallback | AsyncCallback
 
 function repaint(): void {
   console.log("[Render engine]: Rendering page changes...")
@@ -94,20 +96,40 @@ function repaint(): void {
 
 class Task {
   constructor(
-    public callback: Callback,
-    public ms: number,
+    public readonly callback: Callback,
+    public readonly ms: number,
   ) {}
 }
 
 export class EventLoop {
-  private macroTaskQueue = new BinaryHeap<Task>(32)
-  private microTaskQueue = new BinaryHeap<Task>(32)
-  private animationQueue = new BinaryHeap<Task>(32)
+  private readonly macroTaskQueue = new BinaryHeap<Task>(32)
+  private readonly microTaskQueue = new BinaryHeap<Task>(32)
+  private readonly animationQueue = new BinaryHeap<Task>(32)
   private lastPaintTime: number = Date.now()
 
   get isPainting(): boolean {
     // 60 times a second (every 16 ms)
     return Date.now() - this.lastPaintTime >= 16
+  }
+
+  get hasTasks(): boolean {
+    return (
+      this.macroTaskQueue.hasItems ||
+      this.microTaskQueue.hasItems ||
+      this.animationQueue.hasItems
+    )
+  }
+
+  get hasMicroTask(): boolean {
+    return this.microTaskQueue.hasItems
+  }
+
+  get hasMacroTask(): boolean {
+    return this.macroTaskQueue.hasItems
+  }
+
+  get hasAnimationTask(): boolean {
+    return this.animationQueue.hasItems
   }
 
   public async queueMacroTask(callback: Callback, ms: number): Promise<void> {
@@ -146,27 +168,21 @@ export class EventLoop {
     })
   }
 
-  public async empty() {
+  public async run() {
     console.log("[Event loop]: Started.")
-    while (
-      this.macroTaskQueue.hasItems ||
-      this.microTaskQueue.hasItems ||
-      this.animationQueue.hasItems
-    ) {
-      if (this.macroTaskQueue.hasItems) {
-        const task = this.macroTaskQueue.shift()
-        await task.callback()
+    while (this.hasTasks) {
+      if (this.hasMacroTask) {
+        const { callback } = this.macroTaskQueue.shift()
+        await callback()
       }
-
-      while (this.microTaskQueue.hasItems) {
-        const task = this.microTaskQueue.shift()
-        await task.callback()
+      while (this.hasMicroTask) {
+        const { callback } = this.microTaskQueue.shift()
+        await callback()
       }
-
       if (this.isPainting) {
-        while (this.animationQueue.hasItems) {
-          const task = this.animationQueue.shift()
-          await task.callback()
+        while (this.hasAnimationTask) {
+          const { callback } = this.animationQueue.shift()
+          await callback()
         }
         this.lastPaintTime = Date.now()
         repaint()
@@ -233,10 +249,11 @@ async function getTasks(
   }
 }
 
-const onComplete = () =>
+function onComplete() {
   console.log("[Event loop]: Call stack empty, finished.")
+}
 
-const onError = (error: unknown) => {
+function onError(error: unknown) {
   if (error instanceof Error) {
     console.error(error.message)
   }
@@ -245,7 +262,7 @@ const onError = (error: unknown) => {
 async function runOnce() {
   const loop = new EventLoop()
   await getTasks(loop, { minDelay: 500, maxDelay: 1000, quantity: 5 })
-  await loop.empty().then(onComplete).catch(onError)
+  await loop.run().then(onComplete).catch(onError)
 }
 
 await runOnce()
