@@ -1,3 +1,91 @@
+interface Heap<T> {
+  get size(): number
+  get hasItems(): boolean
+  push(item: T): void
+  shift(): T
+  peek(): T
+}
+
+export class BinaryHeap<T extends Task> implements Heap<T> {
+  private items: T[] = []
+
+  constructor(private capacity: number = Infinity) {}
+
+  get size(): number {
+    return this.items.length
+  }
+
+  get hasItems(): boolean {
+    return this.size > 0
+  }
+
+  public push(item: T): void {
+    if (this.size > this.capacity) throw new Error("Heap exceeded its capacity")
+    this.items.push(item)
+    this.heapifyUp()
+  }
+
+  public shift(): T {
+    if (!this.hasItems) throw new Error("Heap is empty")
+    const item = this.items.shift()
+    if (!item) throw new Error("Something went wrong during the Heap shifting")
+    this.heapifyDown()
+    return item
+  }
+
+  public peek(): T {
+    return this.items[0]
+  }
+
+  private parentOf(i: number): number {
+    return Math.floor((i - 1) / 2)
+  }
+
+  private leftChild(i: number): number {
+    return 2 * i + 1
+  }
+
+  private rightChild(i: number): number {
+    return 2 * i + 2
+  }
+
+  private swap(i: number, j: number) {
+    let temp = this.items[i]
+    this.items[i] = this.items[j]
+    this.items[j] = temp
+  }
+
+  private heapifyUp() {
+    let i = this.size - 1
+    while (
+      this.parentOf(i) >= 0 &&
+      this.items[this.parentOf(i)].ms > this.items[i].ms
+    ) {
+      this.swap(this.parentOf(i), i)
+      i = this.parentOf(i)
+    }
+  }
+
+  private heapifyDown() {
+    let i = 0
+    while (this.leftChild(i) < this.size) {
+      let smallerI = this.leftChild(i)
+      if (
+        this.rightChild(i) < this.size &&
+        this.items[this.rightChild(i)].ms < this.items[this.leftChild(i)].ms
+      ) {
+        smallerI = this.rightChild(i)
+      }
+      if (this.items[smallerI].ms > this.items[i].ms) {
+        break
+      } else {
+        this.swap(smallerI, i)
+      }
+      i = smallerI
+    }
+  }
+}
+
 type Callback = () => void | Promise<void>
 
 function repaint(): void {
@@ -11,85 +99,10 @@ class Task {
   ) {}
 }
 
-class BinaryHeap<T extends Task> {
-  private heap: T[] = []
-
-  private parent(i: number): number {
-    return Math.floor((i - 1) / 2)
-  }
-
-  private leftChild(i: number): number {
-    return 2 * i + 1
-  }
-
-  private rightChild(i: number): number {
-    return 2 * i + 2
-  }
-
-  private swap(i: number, j: number) {
-    let temp = this.heap[i]
-    this.heap[i] = this.heap[j]
-    this.heap[j] = temp
-  }
-
-  private heapifyUp() {
-    let i = this.heap.length - 1
-    while (
-      this.parent(i) >= 0 &&
-      this.heap[this.parent(i)].ms > this.heap[i].ms
-    ) {
-      this.swap(this.parent(i), i)
-      i = this.parent(i)
-    }
-  }
-
-  private heapifyDown() {
-    let i = 0
-    while (this.leftChild(i) < this.heap.length) {
-      let smallerI = this.leftChild(i)
-      if (
-        this.rightChild(i) < this.heap.length &&
-        this.heap[this.rightChild(i)].ms < this.heap[this.leftChild(i)].ms
-      ) {
-        smallerI = this.rightChild(i)
-      }
-      if (this.heap[smallerI].ms > this.heap[i].ms) {
-        break
-      } else {
-        this.swap(smallerI, i)
-      }
-      i = smallerI
-    }
-  }
-
-  public push(item: T): void {
-    this.heap.push(item)
-    this.heapifyUp()
-  }
-
-  public pop(): T | undefined {
-    const item = this.heap.shift()
-    this.heapifyDown()
-    return item
-  }
-
-  get size(): number {
-    return this.heap.length
-  }
-
-  public hasItems(): boolean {
-    return this.heap.length > 0
-  }
-
-  public peek(): T {
-    return this.heap[0]
-  }
-}
-
-class EventLoop {
-  private macroTaskQueue = new BinaryHeap<Task>()
-  private microTaskQueue = new BinaryHeap<Task>()
-  private animationQueue = new BinaryHeap<Task>()
+export class EventLoop {
+  private macroTaskQueue = new BinaryHeap<Task>(32)
+  private microTaskQueue = new BinaryHeap<Task>(32)
+  private animationQueue = new BinaryHeap<Task>(32)
   private lastPaintTime: number = Date.now()
 
   get isPainting(): boolean {
@@ -136,23 +149,23 @@ class EventLoop {
   public async empty() {
     console.log("[Event loop]: Started.")
     while (
-      this.macroTaskQueue.hasItems() ||
-      this.microTaskQueue.hasItems() ||
-      this.animationQueue.hasItems()
+      this.macroTaskQueue.hasItems ||
+      this.microTaskQueue.hasItems ||
+      this.animationQueue.hasItems
     ) {
-      if (this.macroTaskQueue.hasItems()) {
-        const task = this.macroTaskQueue.pop()!
+      if (this.macroTaskQueue.hasItems) {
+        const task = this.macroTaskQueue.shift()
         await task.callback()
       }
 
-      while (this.microTaskQueue.hasItems()) {
-        const task = this.microTaskQueue.pop()!
+      while (this.microTaskQueue.hasItems) {
+        const task = this.microTaskQueue.shift()
         await task.callback()
       }
 
       if (this.isPainting) {
-        while (this.animationQueue.hasItems()) {
-          const task = this.animationQueue.pop()!
+        while (this.animationQueue.hasItems) {
+          const task = this.animationQueue.shift()
           await task.callback()
         }
         this.lastPaintTime = Date.now()
@@ -174,7 +187,7 @@ async function getTasks(
 
   const taskTypes = ["macro", "micro", "animation"] as const
 
-  for (let i = 1; i < quantity; i++) {
+  for (let i = 1; i <= quantity; i++) {
     const ms = Math.floor(Math.random() * (maxDelay - minDelay) + minDelay)
     const taskType = taskTypes[Math.floor(Math.random() * taskTypes.length)]
 
@@ -182,47 +195,49 @@ async function getTasks(
       case "macro":
         // Simulate a network request
         await loop.queueMacroTask(async () => {
-          console.log(`[${i}] Macro task started: making network request...`)
+          console.log(`Macro task started: making network request...`)
           await new Promise((resolve) => setTimeout(resolve, ms))
-          console.log(`[${i}] Macro task completed after ${ms} ms.`)
+          console.log(`Macro task completed after ${ms} ms.`)
         }, ms)
         break
 
       case "micro":
         // Simulate a computation
         await loop.queueMicroTask(async () => {
-          console.log(`[${i}] Micro task started: performing computation...`)
+          console.log(`Micro task started: performing computation...`)
           let result = 0
           for (let j = 0; j < 1e6; j++) {
             result += j
           }
-          console.log(`[${i}] Micro task completed: result is ${result}.`)
+          console.log(`Micro task completed: result is ${result}.`)
         }, ms)
         break
 
       case "animation":
         // Simulate a DOM manipulation
         await loop.queueAnimationTask(async () => {
-          console.log(`[${i}] Animation task started: manipulating DOM...`)
+          console.log(`Animation task started: manipulating DOM...`)
           await new Promise((resolve) => setTimeout(resolve, ms))
-          console.log(`[${i}] Animation task completed after ${ms} ms.`)
+          console.log(`Animation task completed after ${ms} ms.`)
         }, ms)
         break
     }
   }
 }
 
-async function run() {
-  const loop = new EventLoop()
-  await getTasks(loop, { minDelay: 500, maxDelay: 1000, quantity: 8 })
-  await loop
-    .empty()
-    .then(() => console.log("[Event loop]: Call stack empty, finished."))
-    .catch((error) => {
-      if (error instanceof Error) {
-        console.error(error.message)
-      }
-    })
+const onComplete = () =>
+  console.log("[Event loop]: Call stack empty, finished.")
+
+const onError = (error: unknown) => {
+  if (error instanceof Error) {
+    console.error(error.message)
+  }
 }
 
-run()
+async function runOnce() {
+  const loop = new EventLoop()
+  await getTasks(loop, { minDelay: 500, maxDelay: 1000, quantity: 5 })
+  await loop.empty().then(onComplete).catch(onError)
+}
+
+await runOnce()

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Toy event loop implementation in TypeScript",
   "main": "src/index.ts",
+  "type": "module",
   "scripts": {
     "start": "tsx src/index",
     "format": "prettier --write \"**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,mdx}\" --cache"
