@@ -102,9 +102,9 @@ class Task {
 }
 
 export class EventLoop {
-  private readonly macroTaskQueue = new BinaryHeap<Task>(32)
-  private readonly microTaskQueue = new BinaryHeap<Task>(32)
-  private readonly animationQueue = new BinaryHeap<Task>(32)
+  private readonly macroTaskQueue = new BinaryHeap<Task>(16)
+  private readonly microTaskQueue = new BinaryHeap<Task>(16)
+  private readonly animationQueue = new BinaryHeap<Task>(16)
   private lastPaintTime: number = Date.now()
 
   get isPainting(): boolean {
@@ -261,7 +261,7 @@ function onError(error: unknown) {
 
 async function runOnce() {
   const loop = new EventLoop()
-  await getTasks(loop, { minDelay: 500, maxDelay: 1000, quantity: 5 })
+  await getTasks(loop, { minDelay: 100, maxDelay: 800, quantity: 6 })
   await loop.run().then(onComplete).catch(onError)
 }
 
