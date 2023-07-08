@@ -168,21 +168,23 @@ export class EventLoop {
     })
   }
 
+  private async handle(queue: BinaryHeap<Task>) {
+    const { callback } = queue.shift()
+    return await callback()
+  }
+
   public async run() {
     console.log("[Event loop]: Started.")
     while (this.hasTasks) {
       if (this.hasMacroTask) {
-        const { callback } = this.macroTaskQueue.shift()
-        await callback()
+        await this.handle(this.macroTaskQueue)
       }
       while (this.hasMicroTask) {
-        const { callback } = this.microTaskQueue.shift()
-        await callback()
+        await this.handle(this.microTaskQueue)
       }
       if (this.isPainting) {
         while (this.hasAnimationTask) {
-          const { callback } = this.animationQueue.shift()
-          await callback()
+          await this.handle(this.animationQueue)
         }
         this.lastPaintTime = Date.now()
         repaint()
