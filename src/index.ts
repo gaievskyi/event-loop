@@ -233,9 +233,9 @@ class TaskMocker {
   }
 }
 
-type Options = { minDelay: number; maxDelay: number; quantity: number }
+type MockOptions = { minDelay: number; maxDelay: number; quantity: number }
 
-async function mockTasks(loop: EventLoop, options: Options) {
+async function mockTasks(loop: EventLoop, options: MockOptions) {
   const { minDelay, maxDelay, quantity } = options
 
   if (minDelay > maxDelay) {
@@ -267,7 +267,8 @@ function onError(error: unknown) {
 async function run() {
   try {
     const loop = new EventLoop()
-    await mockTasks(loop, { minDelay: 100, maxDelay: 800, quantity: 6 })
+    const mockOptions = { minDelay: 100, maxDelay: 800, quantity: 6 } satisfies MockOptions
+    await mockTasks(loop, mockOptions)
     await loop.run()
   } catch (error) {
     onError(error)
