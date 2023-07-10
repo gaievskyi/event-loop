@@ -61,10 +61,7 @@ class BinaryHeap<T extends Task> implements Heap<T> {
 
   private heapifyUp() {
     let i = this.size - 1
-    while (
-      this.parentOf(i) >= 0 &&
-      this.items[this.parentOf(i)].ms > this.items[i].ms
-    ) {
+    while (this.parentOf(i) >= 0 && this.items[this.parentOf(i)].ms > this.items[i].ms) {
       this.swap(this.parentOf(i), i)
       i = this.parentOf(i)
     }
@@ -194,9 +191,7 @@ enum Tasks {
   AnimationTask = "mockAnimationTask",
 }
 
-function withLogging<Args extends unknown[], Return>(
-  target: (...args: Args) => Promise<Return>,
-) {
+function withLogging<Args extends unknown[], Return>(target: (...args: Args) => Promise<Return>) {
   return async function (...args: Args): Promise<Return> {
     console.log(`[Event loop] -> Task started...`)
     const result = await target(...args)
@@ -238,10 +233,9 @@ class TaskMocker {
   }
 }
 
-async function mockTasks(
-  loop: EventLoop,
-  options: { minDelay: number; maxDelay: number; quantity: number },
-) {
+type Options = { minDelay: number; maxDelay: number; quantity: number }
+
+async function mockTasks(loop: EventLoop, options: Options) {
   const { minDelay, maxDelay, quantity } = options
 
   if (minDelay > maxDelay) {
